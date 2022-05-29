@@ -24,7 +24,7 @@ language.
     - binary data as base64 (e.g. `background-image: url(...)`)
   - JS
     - a subset of CommonJS modules
-      - `require(...)` with relative
+      - `require(...)`
       - `module.exports` and `exports`
     - binary data as base64 through custom `requireBinary(...)` function
 
@@ -39,3 +39,8 @@ complete execution of the program at bundle-time to be able to reason about
 possible aliases to `require`. This is impossible and thus `require()` will be
 treated as special syntax. This implementation is thus wrong but should work
 for every sane usage of `require()`.
+
+The "conceptual module name space root" is the working directory. This means
+that required paths which are not relative are resolved from the cwd. For
+security reasons only files in the cwd can be bundled. This can be changed with
+the `-p` option. Input and output file name stay relative to the cwd.
