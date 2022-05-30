@@ -5,50 +5,6 @@ use io;
 use os;
 use strings;
 
-type filetype = enum {
-	HTML,
-	JS,
-	CSS,
-	BINARY,
-	UNKNOWN,
-};
-
-// Bundles all from input linked file and echos the bundle to the output stream.
-// ifile: resolved path
-fn tacker_write(ifile: str, ofile: io::handle, ft: filetype) void = {
-	// const data = match (os::open(ifile, fs::flags::RDONLY)) {
-	// case let data: io::file =>
-	// 	yield data: io::handle;
-	// case let data: fs::error =>
-	// 	fmt::fatalf("file \"{}\" does not exist.", ifile);
-	// };
-	if (ft == filetype::UNKNOWN) {
-		let slc = strings::runes(ifile);
-		defer free(slc);
-		let extstart = lastdotindex(slc);
-		if (extstart == -1)
-			fmt::fatalf("file \"{}\" has broken filetype.", ifile);
-		let ext = runes_to_str(slc[(extstart + 1)..]);
-		defer free(ext);
-		static const knownft = [
-			("html", filetype::HTML),
-			("js",   filetype::JS),
-			("css",  filetype::CSS),
-		];
-		for (let i = 0z; i < len(knownft); i += 1) {
-			if (knownft[i].0 == ext) ft = knownft[i].1;
-		};
-	};
-	// TODO
-	fmt::println(switch (ft) {
-	case filetype::HTML =>    yield "html";
-	case filetype::JS =>      yield "js";
-	case filetype::CSS =>     yield "css";
-	case filetype::BINARY =>  yield "bin";
-	case filetype::UNKNOWN => yield "unknown";
-	})!;
-};
-
 export fn main() void = {
 	const cmd = getopt::parse(os::args,
 		"simple web bundler",
@@ -90,6 +46,24 @@ export fn main() void = {
 	defer free(ifile);
 	const defaultfrom = strings::join("", os::getcwd(), "/");
 	defer free(defaultfrom);
-	tacker_write(resolve_path(ifile, defaultfrom), ofile,
-		filetype::UNKNOWN);
+	const ifile = resolve_path(ifile, defaultfrom);
+	// has to be uncommented again when the bug is fixed
+	// https://todo.sr.ht/~sircmpwn/hare/717
+	// (because of fmt::fatalf)
+	// defer free(ifile);
+
+	let slc = strings::runes(ifile);
+	defer free(slc);
+	let extstart = lastdotindex(slc);
+	if (extstart == -1)
+		fmt::fatalf("file \"{}\" has broken filetype.", ifile);
+	let ext = runes_to_str(slc[(extstart + 1)..]);
+	defer free(ext);
+
+	switch (ext) {
+	case "html" => tacker_html(ifile, ofile);
+	case "js" =>   tacker_js(ifile, ofile);
+	case "css" =>  tacker_css(ifile, ofile);
+	case => fmt::fatalf("unknown filetype: \"{}\".", ifile);
+	};
 };

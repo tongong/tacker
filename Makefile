@@ -1,6 +1,6 @@
 PREFIX=/usr/local
 
-tacker:
+tacker: *.ha
 	hare build -o tacker .
 
 clean:
