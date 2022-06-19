@@ -44,3 +44,10 @@ The "conceptual module name space root" is the working directory. This means
 that required paths which are not relative are resolved from the cwd. For
 security reasons only files in the cwd can be bundled. This can be changed with
 the `-p` option. Input and output file name stay relative to the cwd.
+
+`tacker` does not aim to be 100% spec-compliant. The goal is to work in all
+common scenarios without laying to much emphasis on obscure edge cases. It is a
+tacker after all - not an industrial robot. Though unlike a real-world tacker
+your security should not be at hazard. In the case of javascript malicious
+source files can obviously take over your bundle but they should never take
+over your system.

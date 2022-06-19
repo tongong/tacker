@@ -17,7 +17,7 @@ fn parent_dir(path: str) str = {
 	return strings::fromutf8(bytes[..(i+1)]);
 };
 
-// Applys os::realpath and os::resolve.
+// Applies os::realpath and os::resolve.
 fn realpath_resolve(path: str) str = {
 	const p = match (os::realpath(path)) {
 	case let p: str => yield p;
