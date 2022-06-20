@@ -1,7 +1,10 @@
 PREFIX=/usr/local
 
 tacker: *.ha
-	hare build -o tacker .
+	hare build -o tacker
+
+test:
+	hare test
 
 clean:
 	rm -rf tacker
@@ -14,4 +17,4 @@ install: tacker
 uninstall:
 	rm -rf $(DESTDIR)$(PREFIX)/bin/tacker
 
-.PHONY: clean install uninstall
+.PHONY: test clean install uninstall

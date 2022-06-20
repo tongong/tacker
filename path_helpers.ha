@@ -1,6 +1,7 @@
 use fmt;
 use fs;
 use os;
+use slices;
 use strings;
 
 // All bundled files must be within this directory so that malicious modules
@@ -46,4 +47,43 @@ fn resolve_path(path: str, from: str) str = {
 		fmt::fatalf("file path \"{}\" violates the base path \"{}\".",
 			r, basepath);
 	return r;
+};
+
+// Returns index of the last dot in the filename or -1 if the file contains no
+// dot.
+fn lastdotindex(filename: str) int = {
+	const filename = strings::toutf8(filename);
+	let index = (len(filename) - 1): int;
+	for (index >= 0 && filename[index] != '.') {
+		if (filename[index] == '/') return -1;
+		index -= 1;
+	};
+	return index;
+};
+
+// return value has to be freed.
+fn file_name_bundled(filename: str) str = {
+	let lastdot = lastdotindex(filename);
+	// files without extension get the .bundle at the end
+	if (lastdot == -1) lastdot = len(filename): int;
+
+	const output = strings::dup(filename);
+	const output = strings::toutf8(output);
+
+	const ext = strings::toutf8(".bundle");
+	let bptr: [7]*void = [&ext: *void ...];
+	for (let i = 0z; i < len(ext); i += 1) {
+		bptr[i] = &ext[i];
+	};
+	slices::insertinto(&output: *[]void, size(u8), lastdot: size, bptr...);
+	return strings::fromutf8(output);
+};
+
+@test fn file_name_bundled() void = {
+	assert(file_name_bundled("test.js") == "test.bundle.js");
+	assert(file_name_bundled("test.dot.js") == "test.dot.bundle.js");
+	assert(file_name_bundled("no-ext") == "no-ext.bundle");
+	assert(file_name_bundled("./dir.a/no-ext") == "./dir.a/no-ext.bundle");
+	assert(file_name_bundled("./test.dir/ütf8.html") ==
+		"./test.dir/ütf8.bundle.html");
 };

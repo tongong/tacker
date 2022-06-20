@@ -52,13 +52,10 @@ export fn main() void = {
 	// (because of fmt::fatalf)
 	// defer free(ifile);
 
-	let slc = strings::runes(ifile);
-	defer free(slc);
-	let extstart = lastdotindex(slc);
+	let extstart = lastdotindex(ifile);
 	if (extstart == -1)
 		fmt::fatalf("file \"{}\" has broken filetype.", ifile);
-	let ext = runes_to_str(slc[(extstart + 1)..]);
-	defer free(ext);
+	let ext = strings::fromutf8(strings::toutf8(ifile)[(extstart + 1)..]);
 
 	switch (ext) {
 	case "html" => tacker_html(ifile, ofile);

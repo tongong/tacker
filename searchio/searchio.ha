@@ -1,30 +1,8 @@
-use fmt;
+use bufio;
 use io;
 use os;
 use sort;
 use strings;
-
-// // reads until end is read and pipes all read bytes to ofile (end itself not)
-// // returns true if end is reached, false on EOF
-// fn read_until(ifile: io::handle, ofile: io::handle, end: str) bool = {
-// 	let end = strings::toutf8(end);
-// 	let currIndex = 0z; // the current index in the buffer to check
-// 	for (true) {
-// 		const buf: [1]u8 = [' '];
-// 		if (io::read(ifile, buf) is io::EOF) return false;
-// 		if (buf[0] == end[currIndex]) {
-// 			currIndex += 1;
-// 			if (currIndex == len(end)) return true;
-// 		} else {
-// 			if (currIndex != 0) {
-// 				io::write(ofile, end[..currIndex])!;
-// 				currIndex = 0;
-// 			};
-// 			io::write(ofile, buf)!;
-// 		};
-// 	};
-// 	return false; // unreachable
-// };
 
 // sorted
 export type pattern = []patternelem;
@@ -68,14 +46,6 @@ export fn compile(s: []str) pattern = {
 			} else break;
 		};
 	};
-	// for (let i = 0z; i < len(p); i+= 1) {
-	// 	fmt::print(p[i].index)!;
-	// 	for (let j = 0z; j < len(p[i].data); j+= 1) {
-	// 		fmt::print(" ")!;
-	// 		fmt::print(p[i].data[j])!;
-	// 	};
-	// 	fmt::println()!;
-	// };
 	return p;
 };
 
@@ -134,4 +104,26 @@ export fn search(ifile: io::handle, ofile: io::handle, end: pattern)
 		};
 	};
 	return io::EOF; // unreachable
+};
+
+@test fn searchio() void = {
+	const input = "inputstreamtesttest word2word1 tertemp";
+	const input = &bufio::fixed(strings::toutf8(input), io::mode::READ);
+	const output = bufio::dynamic(io::mode::WRITE);
+	const outbuf = &output.buf;
+	const output = &output;
+	defer io::close(output)!;
+
+	const p = compile(["temp", "test", "word1"]);
+	const matches: [_]size = [1, 1, 2, 0];
+	let matchesindex = 0;
+	for (true) {
+		const m = search(input, output, p);
+		if (m is size) {
+			const m = m: size;
+			assert(matches[matchesindex] == m);
+			matchesindex += 1;
+		} else break;
+	};
+	assert("inputstream word2 ter" == strings::fromutf8(*outbuf));
 };
