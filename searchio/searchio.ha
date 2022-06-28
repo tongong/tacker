@@ -27,12 +27,12 @@ fn patternelem_cmp(a: *void, b: *void) int = {
 	return 0; // will never be reached
 };
 
-// has to be freed TODO custom function for free
+// pattern has to be finished
 export fn compile(s: []str) pattern = {
 	let p: pattern = [];
 	for (let i = 0z; i < len(s); i += 1) {
 		append(p, patternelem {
-			data = strings::toutf8(s[i]),
+			data = strings::toutf8(strings::dup(s[i])),
 			index = i,
 		});
 	};
@@ -47,6 +47,12 @@ export fn compile(s: []str) pattern = {
 		};
 	};
 	return p;
+};
+
+export fn finish(p: pattern) void = {
+	for (let i = 0z; i < len(p); i += 1) {
+		free(p[i].data);
+	};
 };
 
 // reads until one of the end strings is read and pipes all read bytes to ofile
@@ -126,4 +132,5 @@ export fn search(ifile: io::handle, ofile: io::handle, end: pattern)
 		} else break;
 	};
 	assert("inputstream word2 ter" == strings::fromutf8(*outbuf));
+	finish(p);
 };

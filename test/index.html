@@ -2,7 +2,12 @@
 <html>
     <head>
         <!-- asdf < test -->
-        <script src="./a.js"></script>
+        <!-- <script src="./a.js"></script> -->
+        <script attribute=value a2 = 'val2src="wrong"' src="./a.js"></script>
+        <script a3 = "asdf">
+            console.log("test");
+            let end = "</script";
+        </script>
     </head>
     <body>
 

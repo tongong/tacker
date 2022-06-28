@@ -1,6 +1,7 @@
 PREFIX=/usr/local
 
-tacker: *.ha
+SRC = *.ha searchio/*.ha
+tacker: $(SRC)
 	hare build -o tacker
 
 test:

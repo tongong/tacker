@@ -1,6 +1,14 @@
 use fmt;
 use io;
+use os;
 
-fn tacker_css(ifile: str, ofile: io::handle) void = {
-	fmt::fprint(ofile, "css is not implemented yet")!;
+fn tacker_css(inputpath: str, ofile: io::handle) void = {
+	const ifile = os::open(inputpath)!;
+	defer io::close(ifile)!;
+	// TODO
+	for (true) {
+		let buf: [1]u8 = [' '];
+		if (io::read(ifile, buf) is io::EOF) return;
+		io::write(ofile, buf)!;
+	};
 };
