@@ -51,6 +51,38 @@ fn tacker_html(inputpath: str, ofile: io::handle) void = {
 					tacker_js(src, ofile);
 					fmt::fprint(ofile, "</script>")!;
 				};
+			} else if (m == 2) { // stylesheets
+				let tagbuf = bufio::dynamic(io::mode::RDWR);
+				defer io::close(&tagbuf)!;
+				fmt::fprint(&tagbuf, "<link")!;
+				searchio::search(ifile, &tagbuf, p_tagclose);
+				fmt::fprint(&tagbuf, ">")!;
+				const rel = tag_get_attr(tagbuf.buf,
+					strings::toutf8("rel"));
+				let is_style = rel is tag_split;
+				const rel = if (is_style) {
+					const rel = rel: tag_split;
+					const rel = strings::fromutf8(rel.1);
+					if (rel != "stylesheet")
+						is_style = false;
+					yield rel;
+				} else "";
+				if (!is_style) {
+					io::write(ofile, tagbuf.buf)!;
+				} else {
+					const href = tag_get_attr(tagbuf.buf,
+						strings::toutf8("href"));
+					if (href is not_found)
+						fixed_fatalf("broken style tag \"{}\".", strings::fromutf8(tagbuf.buf));
+					const href = href: tag_split;
+					const href = strings::fromutf8(href.1);
+					fmt::fprint(ofile, "<style>\n")!;
+					const href = resolve_path(href,
+						inputpath);
+					defer free(href);
+					tacker_js(href, ofile);
+					fmt::fprint(ofile, "</style>")!;
+				};
 			} else {
 				// TODO other embeds
 				fmt::fatal("[TODO] unimplemented html tag transform");

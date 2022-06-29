@@ -47,10 +47,7 @@ export fn main() void = {
 	const defaultfrom = strings::join("", os::getcwd(), "/");
 	defer free(defaultfrom);
 	const ifile = resolve_path(ifile, defaultfrom);
-	// has to be uncommented again when the bug is fixed
-	// https://todo.sr.ht/~sircmpwn/hare/717
-	// (because of fmt::fatalf)
-	// defer free(ifile);
+	defer free(ifile);
 
 	let extstart = lastdotindex(ifile);
 	if (extstart == -1)
@@ -61,6 +58,13 @@ export fn main() void = {
 	case "html" => tacker_html(ifile, ofile);
 	case "js" =>   tacker_js(ifile, ofile);
 	case "css" =>  tacker_css(ifile, ofile);
-	case => fmt::fatalf("unknown filetype: \"{}\".", ifile);
+	case => fixed_fatalf("unknown filetype: \"{}\".", ifile);
 	};
+};
+
+// Should be replaced by fmt::fatalf when the issue with the compiler is fixed
+// https://todo.sr.ht/~sircmpwn/hare/717
+// Currently defer free() does not work correctly with @noreturn functions
+fn fixed_fatalf(fmt: str, args: fmt::field...) void = {
+	fmt::fatalf(fmt, args...);
 };
