@@ -4,8 +4,11 @@ use os;
 use sort;
 use strings;
 
-// sorted
-export type pattern = []patternelem;
+export type pattern = struct {
+	elems: []patternelem, // sorted
+	// reference to the string list before compile
+	original: []str,
+};
 export type patternelem = struct {
 	// if the first n bytes are identical to the first n bytes in the string
 	// before they are set to 0
@@ -29,7 +32,7 @@ fn patternelem_cmp(a: *void, b: *void) int = {
 
 // pattern has to be finished
 export fn compile(s: []str) pattern = {
-	let p: pattern = [];
+	let p: []patternelem = [];
 	for (let i = 0z; i < len(s); i += 1) {
 		append(p, patternelem {
 			data = strings::toutf8(strings::dup(s[i])),
@@ -46,12 +49,12 @@ export fn compile(s: []str) pattern = {
 			} else break;
 		};
 	};
-	return p;
+	return pattern { elems = p, original = s };
 };
 
 export fn finish(p: pattern) void = {
-	for (let i = 0z; i < len(p); i += 1) {
-		free(p[i].data);
+	for (let i = 0z; i < len(p.elems); i += 1) {
+		free(p.elems[i].data);
 	};
 };
 
@@ -78,8 +81,8 @@ export fn search(ifile: io::handle, ofile: io::handle, end: pattern)
 		const buf = buf[0];
 
 		let nomatches = true;
-		for (let i = curr_elem; i < len(end); i += 1) {
-			const e = end[i].data;
+		for (let i = curr_elem; i < len(end.elems); i += 1) {
+			const e = end.elems[i].data;
 			if (curr_index != 0 && i != curr_elem &&
 				e[curr_index - 1] != 0) break;
 			if (e[curr_index] != 0 && e[curr_index] > buf) break;
@@ -87,8 +90,9 @@ export fn search(ifile: io::handle, ofile: io::handle, end: pattern)
 				curr_elem = i;
 				curr_index += 1;
 				nomatches = false;
-				if (curr_index == len(end[curr_elem].data))
-					return end[curr_elem].index;
+				if (curr_index == len(end.elems[curr_elem]
+						.data))
+					return end.elems[curr_elem].index;
 				break;
 			};
 		};
@@ -96,10 +100,11 @@ export fn search(ifile: io::handle, ofile: io::handle, end: pattern)
 			if (curr_index != 0) {
 				for (let i = 0z; i < curr_index; i += 1) {
 					let elem = curr_elem;
-					for (end[elem].data[i] == 0) {
+					for (end.elems[elem].data[i] == 0) {
 						elem -= 1;
 					};
-					io::write(ofile, [end[elem].data[i]])!;
+					io::write(ofile, [end.elems[elem]
+						.data[i]])!;
 				};
 				curr_elem = 0;
 				curr_index = 0;
