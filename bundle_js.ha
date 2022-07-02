@@ -2,7 +2,11 @@ use fmt;
 use io;
 use os;
 
-fn tacker_js(inputpath: str, ofile: io::handle) void = {
+// html: true if the output can be inlined in a html script tag. This is
+//       important because code like e.g.
+//           let tag = "</script>";
+//       has to be escaped.
+fn tacker_js(inputpath: str, ofile: io::handle, html: bool) void = {
 	const ifile = os::open(inputpath)!;
 	defer io::close(ifile)!;
 	// TODO

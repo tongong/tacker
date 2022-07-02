@@ -51,12 +51,12 @@ export fn main() void = {
 
 	let extstart = lastdotindex(ifile);
 	if (extstart == -1)
-		fmt::fatalf("file \"{}\" has broken filetype.", ifile);
+		fixed_fatalf("file \"{}\" has broken filetype.", ifile);
 	let ext = strings::fromutf8(strings::toutf8(ifile)[(extstart + 1)..]);
 
 	switch (ext) {
 	case "html" => tacker_html(ifile, ofile);
-	case "js" =>   tacker_js(ifile, ofile);
+	case "js" =>   tacker_js(ifile, ofile, false);
 	case "css" =>  tacker_css(ifile, ofile);
 	case => fixed_fatalf("unknown filetype: \"{}\".", ifile);
 	};

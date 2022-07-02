@@ -55,7 +55,7 @@ fn tacker_html(inputpath: str, ofile: io::handle) void = {
 					const src = resolve_path(src,
 						inputpath);
 					defer free(src);
-					tacker_js(src, ofile);
+					tacker_js(src, ofile, true);
 					fmt::fprint(ofile, "</script>")!;
 				};
 			} else if (m == 2) {
@@ -86,7 +86,7 @@ fn tacker_html(inputpath: str, ofile: io::handle) void = {
 					const href = resolve_path(href,
 						inputpath);
 					defer free(href);
-					tacker_js(href, ofile);
+					tacker_css(href, ofile);
 					fmt::fprint(ofile, "</style>")!;
 				};
 			} else {

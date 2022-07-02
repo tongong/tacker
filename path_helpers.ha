@@ -1,4 +1,3 @@
-use fmt;
 use fs;
 use os;
 use slices;
@@ -23,7 +22,8 @@ fn realpath_resolve(path: str) str = {
 	const p = match (os::realpath(path)) {
 	case let p: str => yield p;
 	case let p: fs::error =>
-		fmt::fatalf("path \"{}\" does not exist.", path);
+		fixed_fatalf("path \"{}\" does not exist.", path);
+		yield ""; // unreachable
 	};
 	return os::resolve(p);
 };
@@ -32,7 +32,12 @@ fn realpath_resolve(path: str) str = {
 // from: path to the file (or directory) where the reference was found.
 // Return value has to be freed.
 fn resolve_path(path: str, from: str) str = {
-	// directory path is relativ to
+	if (strings::hasprefix(path, "http://") ||
+			strings::hasprefix(path, "https://")) {
+		fixed_fatalf("bundling of external resources is not allowed: \"{}\".",
+			path);
+	};
+	// directory path is relativ to base
 	// ends with "/"
 	const base = if (strings::hasprefix(path, "./") ||
 			strings::hasprefix(path, "../")) {
@@ -44,7 +49,7 @@ fn resolve_path(path: str, from: str) str = {
 	defer free(r);
 	const r = strings::dup(realpath_resolve(r));
 	if (!strings::hasprefix(r, basepath))
-		fmt::fatalf("file path \"{}\" violates the base path \"{}\".",
+		fixed_fatalf("file path \"{}\" violates the base path \"{}\".",
 			r, basepath);
 	return r;
 };
