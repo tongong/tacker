@@ -77,7 +77,8 @@ fn tacker_html(inputpath: str, ofile: io::handle) void = {
 					const href = tag_get_attr(tagbuf.buf,
 						strings::toutf8("href"));
 					if (href is not_found)
-						fixed_fatalf("broken style tag \"{}\".",
+						fixed_fatalf("{}: broken style tag \"{}\".",
+							inputpath,
 							strings::fromutf8(
 							tagbuf.buf));
 					const href = href: tag_split;

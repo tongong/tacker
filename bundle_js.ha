@@ -127,7 +127,7 @@ fn dep_scan(inputpath: str, graph: *dep_graph) void = {
 						dep_add(inputpath, p, graph);
 					};
 				} else {
-					fmt::fprintfln(os::stderr, "file \"{}\" could contain skipped require() calls.", inputpath)!;
+					warningf("{}: file could contain skipped require() calls.", inputpath);
 					break;
 				};
 			} else if (m == 1) {
@@ -162,7 +162,8 @@ fn read_require(in: io::handle, path: str) (str | no) = {
 	io::seek(in, 8, io::whence::CUR)!;
 	// this weird string contains all characters that are allowed in a js
 	// source file but not in an identifier
-	if (!strings::contains(" !%&()*+,-./:;<=>?[]^{|}~", buf[0]: u32: rune))
+	if (!strings::contains("\t\n\r !%&()*+,-./:;<=>?[]^{|}~", buf[0]: u32:
+			rune))
 		return no;
 
 	io::read(in, buf)!;
@@ -176,6 +177,6 @@ fn read_require(in: io::handle, path: str) (str | no) = {
 		io::read(in, buf)!;
 		if (buf[0] == ')') return ret;
 	};
-	fixed_fatalf("{}: broken require() call", path);
+	fixed_fatalf("{}: broken require() call.", path);
 	return ""; // will not be reached
 };

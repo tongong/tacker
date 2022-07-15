@@ -23,7 +23,7 @@ fn realpath_resolve(path: str) str = {
 	const p = match (os::realpath(path)) {
 	case let p: str => yield p;
 	case let p: fs::error =>
-		fixed_fatalf("path \"{}\" does not exist.", path);
+		fixed_fatalf("{}: file does not exist.", path);
 		yield ""; // unreachable
 	};
 	return os::resolve(p);
@@ -35,7 +35,7 @@ fn realpath_resolve(path: str) str = {
 fn resolve_path(path: str, from: str) str = {
 	if (strings::hasprefix(path, "http://") ||
 			strings::hasprefix(path, "https://")) {
-		fixed_fatalf("bundling of external resources is not allowed: \"{}\".",
+		fixed_fatalf("{}: bundling of external resources is not allowed.",
 			path);
 	};
 	// directory path is relativ to base
@@ -50,7 +50,7 @@ fn resolve_path(path: str, from: str) str = {
 	defer free(r);
 	const r = strings::dup(realpath_resolve(r));
 	if (!strings::hasprefix(r, basepath))
-		fixed_fatalf("file path \"{}\" violates the base path \"{}\".",
+		fixed_fatalf("{}: file path violates the base path \"{}\".",
 			r, basepath);
 	return r;
 };

@@ -51,14 +51,14 @@ export fn main() void = {
 
 	let extstart = lastdotindex(ifile);
 	if (extstart == -1)
-		fixed_fatalf("file \"{}\" has broken filetype.", ifile);
+		fixed_fatalf("{}: broken filetype.", ifile);
 	let ext = strings::fromutf8(strings::toutf8(ifile)[(extstart + 1)..]);
 
 	switch (ext) {
 	case "html" => tacker_html(ifile, ofile);
 	case "js" =>   tacker_js(ifile, ofile, false);
 	case "css" =>  tacker_css(ifile, ofile);
-	case => fixed_fatalf("unknown filetype: \"{}\".", ifile);
+	case => fixed_fatalf("{}: unknown filetype.", ifile);
 	};
 };
 
@@ -67,4 +67,8 @@ export fn main() void = {
 // Currently defer free() does not work correctly with @noreturn functions
 fn fixed_fatalf(fmt: str, args: fmt::field...) void = {
 	fmt::fatalf(fmt, args...);
+};
+
+fn warningf(fmt: str, args: fmt::field...) void = {
+	fmt::fprintfln(os::stderr, fmt, args...)!;
 };
