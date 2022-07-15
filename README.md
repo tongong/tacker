@@ -71,10 +71,10 @@ correctly recognizing regex literals as they could contain quote characters and
 as far as I know this requires parsing the whole AST (how to decide if `/5/` is
 a regex or part of an arithmetic expression?). A similar problem arises for
 template literals. To avoid this complexity `tacker` only reads until reaching
-the first string, regex or template literal. This means that module imports
-have to be at the top of each source file which is the case already for most
-projects. All potentially skipped `require()` calls will be announced as a
-warning.
+the first character that could be start of a string, regex or template literal.
+This means that module imports have to be at the top of each source file which
+is the case already for most projects. All potentially skipped `require()`
+calls will be announced as a warning.
 
 ### script end tags & regex literals
 When inlining javascript in html, the script cannot contain script end tags

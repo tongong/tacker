@@ -47,7 +47,7 @@ fn tacker_html(inputpath: str, ofile: io::handle) void = {
 				if (src is not_found) {
 					io::write(ofile, tagbuf.buf)!;
 				} else {
-					searchio::search(ifile, &tagbuf,
+					searchio::search(ifile, black_hole,
 						p_scriptclose);
 					const src = src: tag_split;
 					const src = strings::fromutf8(src.1);

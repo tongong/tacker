@@ -1,2 +1,2 @@
-console.log(require("./a.js"));
+console.log(require("./a.js")); // illegal -> circular dependency
 exports.msg = ":)";

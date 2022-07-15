@@ -1,4 +1,5 @@
 use fs;
+use io;
 use os;
 use slices;
 use strings;
@@ -8,7 +9,7 @@ use strings;
 let basepath: str = "";
 @fini fn fini() void = free(basepath);
 
-// Cuts a string to the last "/".
+// Cut a string to the last "/".
 // Return value is borrowed from the input.
 fn parent_dir(path: str) str = {
 	const bytes = strings::toutf8(path);
@@ -17,7 +18,7 @@ fn parent_dir(path: str) str = {
 	return strings::fromutf8(bytes[..(i+1)]);
 };
 
-// Applies os::realpath and os::resolve.
+// Apply os::realpath and os::resolve.
 fn realpath_resolve(path: str) str = {
 	const p = match (os::realpath(path)) {
 	case let p: str => yield p;
@@ -54,7 +55,19 @@ fn resolve_path(path: str, from: str) str = {
 	return r;
 };
 
-// Returns index of the last dot in the filename or -1 if the file contains no
+// Works like resolve_path() but adds a .js extension if there is none
+fn resolve_path_require(path: str, from: str) str = {
+	return if (strings::hassuffix(path, ".js"))
+		resolve_path(path, from)
+	else {
+		const p = strings::join("", path, ".js");
+		const res = resolve_path(p, from);
+		free(p);
+		yield res;
+	};
+};
+
+// Return index of the last dot in the filename or -1 if the file contains no
 // dot.
 fn lastdotindex(filename: str) int = {
 	const filename = strings::toutf8(filename);
@@ -91,4 +104,16 @@ fn file_name_bundled(filename: str) str = {
 	assert(file_name_bundled("./dir.a/no-ext") == "./dir.a/no-ext.bundle");
 	assert(file_name_bundled("./test.dir/ütf8.html") ==
 		"./test.dir/ütf8.bundle.html");
+};
+
+// A file to write useless output to (like /dev/null)
+const black_hole: io::handle = &black_hole_s;
+const black_hole_s: io::stream = &black_hole_v;
+const black_hole_v: io::vtable = io::vtable {
+	reader = null,
+	writer = &black_hole_write,
+	...
+};
+fn black_hole_write(s: *io::stream, buf: const []u8) (size | io::error) = {
+	return len(buf);
 };
