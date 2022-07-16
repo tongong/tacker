@@ -33,13 +33,8 @@ fn dep_graph_free(g: dep_graph) void = {
 // inputs are borrowed
 fn tacker_js(inputpath: str, ofile: io::handle, html: bool) void = {
 	let g: dep_graph = [];
-	defer {
-		for (let i = 0z; i < len(g); i += 1)
-			free(g[i].dependencies);
-		free(g);
-	};
+	defer dep_graph_free(g);
 	dep_add(void, inputpath, &g);
-	// TODO
 	for (let i = 0z; i < len(g); i += 1) {
 		fmt::printf("{}: {} - ", i, g[i].path)!;
 		const dep = g[i].dependencies;
@@ -48,7 +43,12 @@ fn tacker_js(inputpath: str, ofile: io::handle, html: bool) void = {
 		};
 		fmt::println("")!;
 	};
-	dep_graph_free(g);
+	const sorting = sort_kahn(g, inputpath);
+	defer free(sorting);
+	fmt::println("sorting:")!;
+	for (let i = 0z; i < len(sorting); i += 1) {
+		fmt::printfln("- {}", g[sorting[i]].path)!;
+	};
 };
 
 let p_req: searchio::pattern = searchio::pattern {...};
@@ -179,4 +179,46 @@ fn read_require(in: io::handle, path: str) (str | no) = {
 	};
 	fixed_fatalf("{}: broken require() call.", path);
 	return ""; // will not be reached
+};
+
+// Kahn's algorithm https://en.wikipedia.org/wiki/Topological_sorting
+// Return value has to be freed
+fn sort_kahn(graph: dep_graph, entrypath: str) []size = {
+	let sorting: []size = [];
+	for (let i = 0z; i < len(graph); i += 1) {
+		graph[i].scanned = false;
+	};
+	for (true) {
+		// Find file without dependencies
+		let f = 0z; // index into graph
+		for (f < len(graph); f += 1) {
+			const deps = graph[f].dependencies;
+			let no_deps = true;
+			for (let i = 0z; i < len(deps); i += 1) {
+				// Deleted edges in graph will be set to -1
+				if (deps[i] != -1) {
+					no_deps = false;
+					break;
+				};
+			};
+			if (no_deps && !graph[f].scanned) break;
+		};
+		if (f == len(graph)) {
+			// If no file without dependencies can be found -> error
+			fixed_fatalf("{}: circular javascript dependencies.",
+				entrypath);
+		};
+		// Delete dependencies for dependent files
+		for (let i = 0z; i < len(graph); i += 1) {
+			let deps = graph[i].dependencies;
+			for (let j = 0z; j < len(deps); j += 1) {
+				if (deps[j] == f) deps[j] = -1;
+			};
+		};
+		graph[f].scanned = true;
+		append(sorting, f);
+		// If all files are sorted -> stop
+		if (len(sorting) == len(graph)) return sorting;
+	};
+	return []; // will not be reached
 };

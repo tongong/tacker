@@ -1,4 +1,5 @@
 let testm = require("./b.js")
+require("./c.js")
 // console.log(testm.hello());
 
 let r = "this require('b.js') will not be macro-expanded.";
