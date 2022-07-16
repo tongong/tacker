@@ -49,13 +49,14 @@ export fn compile(s: []str) pattern = {
 			} else break;
 		};
 	};
-	return pattern { elems = p, original = s };
+	return pattern { elems = p, original = strings::dupall(s) };
 };
 
 export fn finish(p: pattern) void = {
 	for (let i = 0z; i < len(p.elems); i += 1) {
 		free(p.elems[i].data);
 	};
+	strings::freeall(p.original);
 };
 
 // reads until one of the end strings is read and pipes all read bytes to ofile

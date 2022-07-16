@@ -9,3 +9,6 @@ function a() {
     // this should throw a warning
     console.log(require("test"));
 };
+
+console.log(testm);
+window.testm = testm;
