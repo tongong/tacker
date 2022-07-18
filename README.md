@@ -95,3 +95,8 @@ will throw an error. There are two alternative behaviors:
 
 It would be possible to enable behavior (2) via a command argument flag but I
 currently do not see the point in implementing this feature.
+
+## todo
+- css bundling
+- larger test coverage
+- online mode to bundle third party scripts or css
