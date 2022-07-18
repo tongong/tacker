@@ -1,4 +1,5 @@
 use bufio;
+use bytes;
 use fmt;
 use io;
 use os;
@@ -32,6 +33,8 @@ fn dep_graph_free(g: dep_graph) void = {
 //       has to be escaped.
 // inputs are borrowed
 fn tacker_js(inputpath: str, ofile: io::handle, html: bool) void = {
+	const s = script_guard(ofile);
+	if (html) ofile = &s;
 	let g: dep_graph = [];
 	defer dep_graph_free(g);
 	dep_add(void, inputpath, &g);
@@ -41,16 +44,16 @@ fn tacker_js(inputpath: str, ofile: io::handle, html: bool) void = {
 	for (let i = 0z; i < len(sorting); i += 1) {
 		fmt::fprintfln(ofile, "const _tacker{} = (function() {{", sorting[i])!;
 		fmt::fprintln(ofile, "const module = { exports: {} }, exports = module.exports;")!;
-		emit_bundled(g[sorting[i]].path, ofile, g, html);
-		fmt::fprintln(ofile, "return module.exports;")!;
+		emit_bundled(g[sorting[i]].path, ofile, g);
+		fmt::fprintln(ofile, "\nreturn module.exports;")!;
 		fmt::fprintln(ofile, "})();")!;
 	};
 	fmt::fprintln(ofile, "})();")!;
+	if (html) io::close(ofile)!;
 };
 
 
 let p_req: searchio::pattern = searchio::pattern {...};
-let p_reqscript: searchio::pattern = searchio::pattern {...};
 let p_newline: searchio::pattern = searchio::pattern {...};
 let p_commentend: searchio::pattern = searchio::pattern {...};
 let p_quotedouble: searchio::pattern = searchio::pattern {...};
@@ -59,8 +62,6 @@ let p_quotesingle: searchio::pattern = searchio::pattern {...};
 @init fn init() void = {
 	// "/" has to be recognized as regex literal or comment start
 	p_req = searchio::compile(["require(", "/", "\"", "'", "`"]);
-	p_reqscript = searchio::compile(["require(", "</script", "/", "\"", "'",
-		"`"]);
 	p_newline = searchio::compile(["\n"]);
 	p_commentend = searchio::compile(["*/"]);
 	p_quotedouble = searchio::compile(["\""]);
@@ -69,7 +70,6 @@ let p_quotesingle: searchio::pattern = searchio::pattern {...};
 
 @fini fn fini() void = {
 	defer searchio::finish(p_req);
-	defer searchio::finish(p_reqscript);
 	defer searchio::finish(p_newline);
 	defer searchio::finish(p_commentend);
 	defer searchio::finish(p_quotedouble);
@@ -113,26 +113,18 @@ fn dep_scan(inputpath: str, graph: *dep_graph) void = {
 	const ifile = os::open(inputpath)!;
 	defer io::close(ifile)!;
 	// Read until require or comment or quote
-	// if start of string literal etc was found (disabled require)
-	let disabled = false;
 	for (true) {
 		const m = searchio::search(ifile, black_hole, p_req);
 		if (m is size) {
 			if (m == 0) {
-				if (disabled == false) {
-					const p = read_require(ifile,
+				const p = read_require(ifile, inputpath);
+				if (p is str) {
+					const p = p: str;
+					defer free(p);
+					const p = resolve_path_require(p,
 						inputpath);
-					if (p is str) {
-						const p = p: str;
-						defer free(p);
-						const p = resolve_path_require(
-							p, inputpath);
-						defer free(p);
-						dep_add(inputpath, p, graph);
-					};
-				} else {
-					warningf("{}: file could contain skipped require() calls.", inputpath);
-					break;
+					defer free(p);
+					dep_add(inputpath, p, graph);
 				};
 			} else if (m == 1) {
 				// "/*", "//" or "/regex/"
@@ -144,11 +136,8 @@ fn dep_scan(inputpath: str, graph: *dep_graph) void = {
 				} else if (buf[0] == '*') {
 					searchio::search(ifile, black_hole,
 						p_commentend);
-				} else disabled = true;
-			} else {
-				// '"', "'" or "`"
-				disabled = true;
-			};
+				} else break;
+			} else break; // '"', "'" or "`"
 		} else break;
 	};
 };
@@ -231,45 +220,36 @@ fn sort_kahn(graph: dep_graph, entrypath: str) []size = {
 
 // Resolve require() and add files to the bundle
 // very similar to dep_scan()
-fn emit_bundled(inputpath: str, ofile: io::handle, graph: dep_graph, html: bool)
-		void = {
+fn emit_bundled(inputpath: str, ofile: io::handle, graph: dep_graph) void = {
 	const ifile = os::open(inputpath)!;
 	defer io::close(ifile)!;
+
 	// Read until require or comment or quote
-	// if start of string literal etc was found (disabled require)
-	let disabled = false;
 	for (true) {
-		const m = searchio::search(ifile, ofile, p_reqscript);
+		const m = searchio::search(ifile, ofile, p_req);
 		if (m is size) {
 			const m = m: size;
 			if (m == 0) {
-				if (disabled == false) {
-					const p = read_require(ifile,
-						inputpath);
-					if (p is str) {
-						const p = p: str;
-						defer free(p);
-						const p = resolve_path_require(
-							p, inputpath);
-						defer free(p);
-						let i = 0z;
-						// could break if files are
-						// changed in race condition
-						for (graph[i].path != p) i += 1;
-						fmt::fprintf(ofile, "_tacker{}",
-							i)!;
-					} else fmt::fprint(ofile, "require(")!;
+				const p = read_require(ifile,
+					inputpath);
+				if (p is str) {
+					const p = p: str;
+					defer free(p);
+					const p = resolve_path_require(
+						p, inputpath);
+					defer free(p);
+					let i = 0z;
+					// could break if files are
+					// changed in race condition
+					for (graph[i].path != p) i += 1;
+					fmt::fprintf(ofile, "_tacker{}", i)!;
 				} else fmt::fprint(ofile, "require(")!;
 			} else if (m == 1) {
-				// </script
-				fmt::fprint(ofile, if (html) "<\\/script" else
-					"</script")!;
-			} else if (m == 2) {
 				// "/*", "//" or "/regex/"
 				fmt::fprint(ofile, "/")!;
 				const buf: [1]u8 = [' '];
 				if (io::read(ifile, buf) is io::EOF) break;
-				io::write(ofile, buf)!;
+				io::writeall(ofile, buf)!;
 				if (buf[0] == '/') {
 					searchio::search(ifile, ofile,
 						p_newline);
@@ -278,12 +258,126 @@ fn emit_bundled(inputpath: str, ofile: io::handle, graph: dep_graph, html: bool)
 					searchio::search(ifile, ofile,
 						p_commentend);
 					fmt::fprint(ofile, "*/")!;
-				} else disabled = true;
+				} else break;
 			} else {
 				// '"', "'" or "`"
-				fmt::fprint(ofile, p_reqscript.original[m])!;
-				disabled = true;
+				fmt::fprint(ofile, p_req.original[m])!;
+				break;
 			};
 		} else break;
 	};
+	search_require(ifile, ofile, inputpath);
+};
+
+// Find potentially lost require() calls while piping everything from in to out.
+fn search_require(in: io::handle, out: io::handle, inputpath: str) void = {
+	const re = strings::toutf8("require("); // 7 = len(re) - 1
+	static let buf_ext: [4096 + 7]u8 = [0...];
+	let buf = buf_ext[7..];
+	for (true) {
+		match (io::read(in, buf)!) {
+		case let n: size => {
+			io::writeall(out, buf[..n])!;
+			if (bytes::contains(buf[0..n], re)) {
+				warningf("{}: file could contain skipped require() calls.",
+					inputpath);
+				break;
+			};
+			buf_ext[..7] = buf_ext[n..n+7];
+		};
+		case io::EOF => break;
+		};
+	};
+	io::copy(out, in)!;
+};
+
+type sgstream = struct {
+	stream: io::stream,
+	sink: io::handle,
+	buffered: size, // number of buffered bytes in script
+};
+
+const sg_vtable: io::vtable = io::vtable {
+	writer = &sg_write,
+	closer = &sg_close,
+	...
+};
+
+// Create a writeonly handle that replaces </script with <\/script
+fn script_guard(sink: io::handle) sgstream = {
+	return sgstream {
+		stream = &sg_vtable,
+		sink = sink,
+		buffered = 0,
+	};
+};
+
+const scriptbuf: [8]u8 = ['<', '/', 's', 'c', 'r', 'i', 'p', 't'];
+
+fn sg_write(st: *io::stream, buf_orig: const []u8) (size | io::error) = {
+	const st = st: *sgstream;
+	let buf = buf_orig;
+	// IDEA
+	// if the buffer size is smaller than the rest of the scriptbuf
+	// - test if the buffer fits into the rest of the scriptbuf
+	// - if not test if the buffer is start of a new script string
+	// if the buffer size is bigger or equal to the rest of the scriptbuf
+	// - check if the scriptbuf is finished
+	const scriptleft = scriptbuf[st.buffered..];
+	if (len(buf) < len(scriptleft)) {
+		if (bytes::hasprefix(scriptleft, buf)) {
+			st.buffered += len(buf);
+		} else {
+			io::writeall(st.sink, scriptbuf[..st.buffered])!;
+			if (bytes::hasprefix(scriptbuf, buf)) {
+				st.buffered = len(buf);
+			} else {
+				io::writeall(st.sink, buf)!;
+			};
+		};
+	} else {
+		if (bytes::hasprefix(buf, scriptleft)) {
+			buf = buf[len(scriptleft)..];
+			io::writeall(st.sink, strings::toutf8("<\\/script"))!;
+		} else {
+			io::writeall(st.sink, scriptbuf[..st.buffered])!;
+		};
+		let written = false;
+		for (let i = 1z; i < len(scriptbuf); i += 1) {
+			if (len(buf) > i && bytes::hassuffix(buf,
+					scriptbuf[..i])) {
+				st.buffered = i;
+				sg_write_single(st.sink, buf[..len(buf)-i]);
+				written = true;
+			};
+		};
+		if (!written) {
+			sg_write_single(st.sink, buf);
+			st.buffered = 0;
+		};
+	};
+	return len(buf_orig);
+};
+
+// Securely write like sg_write without checking matches across multiple writes
+fn sg_write_single(sink: io::handle, buf: []u8) void = {
+	if (bytes::contains(buf, scriptbuf)) {
+		let i = 0z; // number of bytes written
+		for (i <= len(buf) - len(scriptbuf)) {
+			if (bytes::equal(buf[i..i+len(scriptbuf)], scriptbuf)) {
+				io::writeall(sink,
+					strings::toutf8("<\\/script"))!;
+				i += len(scriptbuf);
+			} else {
+				io::writeall(sink, buf[i..i+1])!;
+				i += 1;
+			};
+		};
+		io::writeall(sink, buf[i..])!;
+	} else io::writeall(sink, buf)!;
+};
+
+fn sg_close(st: *io::stream) (void | io::error) = {
+	const st = st: *sgstream;
+	if (st.buffered != 0) io::writeall(st.sink, scriptbuf[..st.buffered])!;
 };

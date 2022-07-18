@@ -104,14 +104,14 @@ export fn search(ifile: io::handle, ofile: io::handle, end: pattern)
 					for (end.elems[elem].data[i] == 0) {
 						elem -= 1;
 					};
-					io::write(ofile, [end.elems[elem]
+					io::writeall(ofile, [end.elems[elem]
 						.data[i]])!;
 				};
 				curr_elem = 0;
 				curr_index = 0;
 				leftover = buf;
 			} else {
-				io::write(ofile, [buf])!;
+				io::writeall(ofile, [buf])!;
 			};
 		};
 	};
@@ -137,6 +137,7 @@ export fn search(ifile: io::handle, ofile: io::handle, end: pattern)
 			matchesindex += 1;
 		} else break;
 	};
+	assert(matchesindex == 4);
 	assert("inputstream word2 ter" == strings::fromutf8(*outbuf));
 	finish(p);
 };

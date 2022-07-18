@@ -4,8 +4,9 @@ SRC = *.ha searchio/*.ha
 tacker: $(SRC)
 	hare build -o tacker
 
-test:
+test: tacker
 	hare test
+	./tacker test-page/index.html
 
 clean:
 	rm -rf tacker

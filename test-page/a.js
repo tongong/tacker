@@ -1,6 +1,9 @@
+// </script>
 let testm = require("./b.js")
 require("./c.js")
-// console.log(testm.hello());
+require("./scripttest");
+
+console.log("</script> tags work!");
 
 let r = "this require('b.js') will not be macro-expanded.";
 console.log("hi from an imported script!");

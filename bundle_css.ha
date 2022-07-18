@@ -9,6 +9,6 @@ fn tacker_css(inputpath: str, ofile: io::handle) void = {
 	for (true) {
 		let buf: [1]u8 = [' '];
 		if (io::read(ifile, buf) is io::EOF) return;
-		io::write(ofile, buf)!;
+		io::writeall(ofile, buf)!;
 	};
 };

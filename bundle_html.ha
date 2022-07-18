@@ -45,7 +45,7 @@ fn tacker_html(inputpath: str, ofile: io::handle) void = {
 				const src = tag_get_attr(tagbuf.buf,
 					strings::toutf8("src"));
 				if (src is not_found) {
-					io::write(ofile, tagbuf.buf)!;
+					io::writeall(ofile, tagbuf.buf)!;
 				} else {
 					searchio::search(ifile, black_hole,
 						p_scriptclose);
@@ -72,7 +72,7 @@ fn tacker_html(inputpath: str, ofile: io::handle) void = {
 					yield rel;
 				} else "";
 				if (!is_style) {
-					io::write(ofile, tagbuf.buf)!;
+					io::writeall(ofile, tagbuf.buf)!;
 				} else {
 					const href = tag_get_attr(tagbuf.buf,
 						strings::toutf8("href"));
@@ -96,7 +96,7 @@ fn tacker_html(inputpath: str, ofile: io::handle) void = {
 				const src = tag_get_attr(tagbuf.buf,
 					strings::toutf8("src"));
 				if (src is not_found) {
-					io::write(ofile, tagbuf.buf)!;
+					io::writeall(ofile, tagbuf.buf)!;
 				} else {
 					const src = src: tag_split;
 					const srctext = strings::fromutf8(
@@ -104,10 +104,10 @@ fn tacker_html(inputpath: str, ofile: io::handle) void = {
 					const srctext = resolve_path(srctext,
 						inputpath);
 					defer free(srctext);
-					io::write(ofile, src.0)!;
+					io::writeall(ofile, src.0)!;
 					fmt::fprint(ofile, "data:;base64,")!;
 					tacker_binary(srctext, ofile);
-					io::write(ofile, src.2)!;
+					io::writeall(ofile, src.2)!;
 				};
 			};
 		} else break;
