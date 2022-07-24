@@ -40,9 +40,9 @@ fn tacker_js(inputpath: str, ofile: io::handle, html: bool) void = {
 	dep_add(void, inputpath, &g);
 	const sorting = sort_kahn(g, inputpath);
 	defer free(sorting);
-	fmt::fprintln(ofile, "(function() {")!;
+	fmt::fprintln(ofile, "(async function() {")!;
 	for (let i = 0z; i < len(sorting); i += 1) {
-		fmt::fprintfln(ofile, "const _tacker{} = (function() {{", sorting[i])!;
+		fmt::fprintfln(ofile, "const _tacker{} = await (async function() {{", sorting[i])!;
 		fmt::fprintln(ofile, "const module = { exports: {} }, exports = module.exports;")!;
 		emit_bundled(g[sorting[i]].path, ofile, g);
 		fmt::fprintln(ofile, "\nreturn module.exports;")!;
