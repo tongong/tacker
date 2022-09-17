@@ -333,6 +333,7 @@ fn sg_write(st: *io::stream, buf_orig: const []u8) (size | io::error) = {
 				st.buffered = len(buf);
 			} else {
 				io::writeall(st.sink, buf)!;
+				st.buffered = 0;
 			};
 		};
 	} else {
