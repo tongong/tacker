@@ -12,7 +12,7 @@ fn tacker_html(inputpath: str, ofile: io::handle) void = {
 	const ifile = os::open(inputpath)!;
 	defer io::close(ifile)!;
 	const p_main = searchio::compile(["<!--", "<script", "<link",
-		"<audio", "<embed", "img", "source", "<track", "<video"]);
+		"<audio", "<embed", "<img", "<source", "<track", "<video"]);
 	const p_comment = searchio::compile(["-->"]);
 	const p_tagclose = searchio::compile([">"]);
 	const p_scriptclose = searchio::compile(["</script>"]);
